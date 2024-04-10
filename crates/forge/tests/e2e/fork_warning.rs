@@ -1,14 +1,16 @@
 use super::common::runner::{setup_package, test_runner};
 use assert_fs::fixture::{FileWriteStr, PathChild};
 use axum::{extract::Query, response::Redirect, routing::any, Router};
-use indoc::{formatdoc, indoc};
+use indoc::formatdoc;
 use lazy_static::lazy_static;
-use shared::{consts::EXPECTED_RPC_VERSION, test_utils::output_assert::assert_stdout_contains};
+use shared::consts::{EXPECTED_RPC_VERSION, RPC_URL_WITH_NO_VERSION};
+use shared::test_utils::output_assert::assert_stdout_contains;
 use std::{thread::sleep, time::Duration};
 use tokio::{
     net::TcpListener,
     runtime::{Builder, Runtime},
 };
+use url::Url;
 
 #[derive(serde::Deserialize)]
 struct Params {
@@ -39,17 +41,22 @@ fn setup_redirect_server() {
 #[test]
 fn should_print_warning() {
     let temp = setup_package("empty");
+    let mut rpc_url: Url = RPC_URL_WITH_NO_VERSION.clone();
+    rpc_url.set_path("/rpc/v0_5");
 
     temp.child("tests/test.cairo")
-        .write_str(indoc!(
-            r#"
-                #[fork(url: "http://188.34.188.184:7070/rpc/v0_5", block_id: BlockId::Tag(BlockTag::Latest))]
+        .write_str(
+            formatdoc!(
+                r#"
+                #[fork(url: "{rpc_url}", block_id: BlockId::Tag(BlockTag::Latest))]
                 #[test]
-                fn t1() {
+                fn t1() {{
                     assert!(false);
-                }
+                }}
             "#
-        ))
+            )
+            .as_str(),
+        )
         .unwrap();
 
     let output = test_runner(&temp).assert();
@@ -60,7 +67,7 @@ fn should_print_warning() {
             r"
                 [..]Compiling[..]
                 [..]Finished[..]
-                [WARNING] RPC node with the url http://188.34.188.184:7070/rpc/v0_5 uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
+                [WARNING] RPC node with the url {rpc_url} uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
 
 
                 Collected 1 test(s) from empty package
@@ -71,11 +78,11 @@ fn should_print_warning() {
                 Failure[..]
                 Tests: 0 passed, 1 failed, 0 skipped, 0 ignored, 0 filtered out
 
-                Latest block number = [..] for url = http://188.34.188.184:7070/rpc/v0_5
+                Latest block number = [..] for url = {rpc_url}
 
                 Failures:
                     tests::test::t1
-            "
+            ",
         ),
     );
 }
@@ -83,22 +90,27 @@ fn should_print_warning() {
 #[test]
 fn should_dedup_urls() {
     let temp = setup_package("empty");
+    let mut rpc_url: Url = RPC_URL_WITH_NO_VERSION.clone();
+    rpc_url.set_path("/rpc/v0_5");
 
     temp.child("tests/test.cairo")
-        .write_str(indoc!(
-            r#"
-                #[fork(url: "http://188.34.188.184:7070/rpc/v0_5", block_id: BlockId::Tag(BlockTag::Latest))]
+        .write_str(
+            formatdoc!(
+                r#"
+                #[fork(url: "{rpc_url}", block_id: BlockId::Tag(BlockTag::Latest))]
                 #[test]
-                fn t1() {
+                fn t1() {{
                     assert!(false);
-                }
-                #[fork(url: "http://188.34.188.184:7070/rpc/v0_5", block_id: BlockId::Tag(BlockTag::Latest))]
+                }}
+                #[fork(url: "{rpc_url}", block_id: BlockId::Tag(BlockTag::Latest))]
                 #[test]
-                fn t2() {
+                fn t2() {{
                     assert!(false);
-                }
-            "#
-        ))
+                }}
+            "#,
+            )
+            .as_str(),
+        )
         .unwrap();
 
     let output = test_runner(&temp).assert();
@@ -109,7 +121,7 @@ fn should_dedup_urls() {
             r"
                 [..]Compiling[..]
                 [..]Finished[..]
-                [WARNING] RPC node with the url http://188.34.188.184:7070/rpc/v0_5 uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
+                [WARNING] RPC node with the url {rpc_url} uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
 
 
                 Collected 2 test(s) from empty package
@@ -123,12 +135,12 @@ fn should_dedup_urls() {
                 Failure[..]
                 Tests: 0 passed, 2 failed, 0 skipped, 0 ignored, 0 filtered out
 
-                Latest block number = [..] for url = http://188.34.188.184:7070/rpc/v0_5
+                Latest block number = [..] for url = {rpc_url}
 
                 Failures:
                     tests::test::t1
                     tests::test::t2
-            "
+            ",
         ),
     );
 }
@@ -138,22 +150,24 @@ fn should_print_foreach() {
     setup_redirect_server();
 
     let temp = setup_package("empty");
+    let mut rpc_url: Url = RPC_URL_WITH_NO_VERSION.clone();
+    rpc_url.set_path("/rpc/v0_5");
 
     temp.child("tests/test.cairo")
-        .write_str(indoc!(
+        .write_str(formatdoc!(
             r#"
-                #[fork(url: "http://127.0.0.1:3030?url=http://188.34.188.184:7070/rpc/v0_5", block_id: BlockId::Tag(BlockTag::Latest))]
+                #[fork(url: "http://127.0.0.1:3030?url={rpc_url}", block_id: BlockId::Tag(BlockTag::Latest))]
                 #[test]
-                fn t1() {
+                fn t1() {{
                     assert!(false);
-                }
-                #[fork(url: "http://188.34.188.184:7070/rpc/v0_5", block_id: BlockId::Tag(BlockTag::Latest))]
+                }}
+                #[fork(url: "{rpc_url}", block_id: BlockId::Tag(BlockTag::Latest))]
                 #[test]
-                fn t2() {
+                fn t2() {{
                     assert!(false);
-                }
+                }}
             "#
-        ))
+        ).as_str())
         .unwrap();
 
     let output = test_runner(&temp).assert();
@@ -164,8 +178,8 @@ fn should_print_foreach() {
             r"
                 [..]Compiling[..]
                 [..]Finished[..]
-                [WARNING] RPC node with the url http://127.0.0.1:3030?url=http://188.34.188.184:7070/rpc/v0_5 uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
-                [WARNING] RPC node with the url http://188.34.188.184:7070/rpc/v0_5 uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
+                [WARNING] RPC node with the url http://127.0.0.1:3030?url={rpc_url} uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
+                [WARNING] RPC node with the url {rpc_url} uses incompatible version 0.5.1. Expected version: {EXPECTED_RPC_VERSION}
 
 
                 Collected 2 test(s) from empty package
@@ -179,8 +193,8 @@ fn should_print_foreach() {
                 Failure[..]
                 Tests: 0 passed, 2 failed, 0 skipped, 0 ignored, 0 filtered out
 
-                Latest block number = [..] for url = http://127.0.0.1:3030?url=http://188.34.188.184:7070/rpc/v0_5
-                Latest block number = [..] for url = http://188.34.188.184:7070/rpc/v0_5
+                Latest block number = [..] for url = http://127.0.0.1:3030?url={rpc_url}
+                Latest block number = [..] for url = {rpc_url}
 
                 Failures:
                     tests::test::t1

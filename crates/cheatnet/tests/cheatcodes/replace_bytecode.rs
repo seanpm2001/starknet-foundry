@@ -13,6 +13,7 @@ use cheatnet::{
     state::{CheatnetState, ExtendedStateReader},
 };
 use num_traits::Zero;
+use shared::consts::RPC_URL;
 use starknet_api::{
     block::BlockNumber,
     contract_address,
@@ -52,7 +53,7 @@ fn fork() {
             dict_state_reader: build_testing_state(),
             fork_state_reader: Some(
                 ForkStateReader::new(
-                    "http://188.34.188.184:7070/rpc/v0_7".parse().unwrap(),
+                    RPC_URL.clone(),
                     BlockNumber(53300),
                     cache_dir.path().to_str().unwrap(),
                 )

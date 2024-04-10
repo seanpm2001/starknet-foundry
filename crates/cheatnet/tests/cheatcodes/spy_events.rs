@@ -19,6 +19,7 @@ use cheatnet::{
 };
 use conversions::string::TryFromHexStr;
 use conversions::IntoConv;
+use shared::consts::RPC_URL;
 use starknet_api::block::BlockNumber;
 use std::vec;
 use tempfile::TempDir;
@@ -485,7 +486,7 @@ fn capture_cairo0_event() {
             dict_state_reader: build_testing_state(),
             fork_state_reader: Some(
                 ForkStateReader::new(
-                    "http://188.34.188.184:7070/rpc/v0_7".parse().unwrap(),
+                    RPC_URL.clone(),
                     BlockNumber(53_626),
                     temp_dir.path().to_str().unwrap(),
                 )

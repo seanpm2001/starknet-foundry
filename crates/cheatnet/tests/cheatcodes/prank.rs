@@ -23,6 +23,7 @@ use tempfile::TempDir;
 
 use super::test_environment::TestEnvironment;
 use conversions::string::TryFromHexStr;
+use shared::consts::RPC_URL;
 
 trait PrankTrait {
     fn prank(&mut self, target: CheatTarget, new_address: u128, span: CheatSpan);
@@ -302,7 +303,7 @@ fn prank_cairo0_callback() {
             dict_state_reader: build_testing_state(),
             fork_state_reader: Some(
                 ForkStateReader::new(
-                    "http://188.34.188.184:7070/rpc/v0_7".parse().unwrap(),
+                    RPC_URL.clone(),
                     BlockNumber(53_631),
                     temp_dir.path().to_str().unwrap(),
                 )
