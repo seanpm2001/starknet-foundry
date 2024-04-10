@@ -204,6 +204,7 @@ jobs:
       - name: Smoke test
         shell: bash
         env:
+          # TODO change CHEATNET_RPC_URL secret to RPC_URL
           RPC_URL: ${{ secrets.CHEATNET_RPC_URL }}
         run: |
           BINARY_PATH="${{ env.BINARY_PATH }}"
