@@ -7,4 +7,7 @@ jobs:
   test_envs:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: echo "This message is from the tomek/2141-pull-request-target branch"
+      - run: cat .tool-versions
+
