@@ -1,0 +1,12 @@
+name: Test CI with pull_request_target
+
+on:
+  pull_request_target:
+
+  push:
+
+jobs:
+  test_envs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "This message is from the tomek/2141-pull-request-target branch"
